@@ -203,19 +203,19 @@ class OLED85
 {
   private:
     void commandList(uint8_t len, const uint8_t init_commands_list []);
-   
+    void setColAddr(uint8_t addr_start, uint8_t addr_stop);
+    void setPageAddr(uint8_t addr_start, uint8_t addr_stop);
+    void sendCommand(uint8_t command);
+    void sendData(uint8_t data);
     
     
     
   public:
     OLED85();
-    void setColAddr(uint8_t addr_start, uint8_t addr_stop);
-    void setPageAddr(uint8_t addr_start, uint8_t addr_stop);
-    void sendCommand(uint8_t command);
-    void sendData(uint8_t data);
+    
     void fillScreen(uint8_t data);
-    void drawPixel(uint8_t x, uint8_t y);
-    void drawBlock(uint8_t x, uint8_t y);
+    void drawPixel(uint8_t x, uint8_t y); // for drawing the snake
+    void drawBlock(uint8_t x, uint8_t y);  // for displaying final score
     void drawGrid();
     void removePixel(uint8_t x, uint8_t y);
     void blinkScreen(uint8_t n);
