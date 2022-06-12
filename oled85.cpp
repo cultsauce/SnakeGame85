@@ -69,13 +69,12 @@ void OLED85::setPageAddr(uint8_t addr_start, uint8_t addr_stop)
 
 void OLED85::fillScreen(uint8_t data)
 {
-  for (uint8_t i = 0; i < NUM_PAGES; i++)
-  {
-    setColAddr(0, WIDTH - 1);
-    setPageAddr(i, i);
+  setPageAddr(0, NUM_PAGES - 1);
+  setColAddr(0, WIDTH - 1);
+  for (uint8_t i = 0; i < NUM_PAGES; i++) {
     TinyWireM.beginTransmission(I2C_ADDR);
     TinyWireM.write(DATABYTE);
-    for (uint16_t j = 0; j < WIDTH ; j++)
+    for (uint8_t j = 0; j < WIDTH ; j++)
     {
       if (TinyWireM.write(data) == 0)
       {
@@ -90,31 +89,19 @@ void OLED85::fillScreen(uint8_t data)
 }
 
 /// x in range <0, 16), y in range <0, 8) - fills a 8x8 pixel block on the specified index
-void OLED85::drawPixel(uint8_t x, uint8_t y)
+void OLED85::drawBlock(uint8_t x, uint8_t y, uint8_t offset_start, uint8_t offset_stop, uint8_t pattern)
 {
   x *= NUM_PAGES;
   setPageAddr(y, y);
-  setColAddr(x + 1, x + 7);
-  for (uint8_t j = 0; j < 6; j++)
-  {
-    sendData(0x7E); // do not fill it completely, make a 1 pixel wide border around it
-  }
-}
-
-/// x in range <0, 16), y in range <0, 8) - fills a 8x8 pixel block on the specified index
-void OLED85::drawBlock(uint8_t x, uint8_t y)
-{
-  x *= NUM_PAGES;
-  setPageAddr(y, y);
-  setColAddr(x, x + 8);
+  setColAddr(x + offset_start, x + 8 - offset_stop);
   for (uint8_t j = 0; j < 8; j++)
   {
-    sendData(0xFF); // do not fill it completely, make a 1 pixel wide border around it
+    sendData(pattern);
   }
 }
 
 // x in range <0, 16), y in range <0, 8) - removes a 8x8 pixel block from the specified index
-void OLED85::removePixel(uint8_t x, uint8_t y)
+void OLED85::removeBlock(uint8_t x, uint8_t y)
 {
   x *= NUM_PAGES;
   setPageAddr(y, y);
@@ -126,27 +113,25 @@ void OLED85::removePixel(uint8_t x, uint8_t y)
   setColAddr(x + 4, x + 4);
 
   // redraw the grid on the removed block (draw a black dot in the middle of the block)
-  sendData(0x10);  
+  sendData(0x10);
 }
 
 // draw background grid with dots
 void OLED85::drawGrid()
 {
-  for (uint8_t i = 4; i < WIDTH; i += NUM_PAGES)
-  {
-    setColAddr(i, i);
-    for (uint8_t j = 0; j < HEIGHT / NUM_PAGES; j++)
-    {
-      setPageAddr(j, j);
-      sendData(0x10); // draw a black dot in the middle of the block
+  //setColAddr(0, WIDTH - 1);
+  //setPageAddr(0, NUM_PAGES - 1);
+  for (uint8_t i = 0; i < NUM_PAGES; i++){
+    for (uint8_t j = 0; j < WIDTH/ NUM_PAGES; j++) {
+      drawBlock(j, i, 4, 4, 0x10);
     }
   }
 }
 
 // create blinking effect by inverting and reverting colors of the display (n times)
-void OLED85::blinkScreen(uint8_t n)
+void OLED85::blinkScreen(uint8_t times)
 {
-  for (uint8_t i = 0; i < n; i++)
+  for (uint8_t i = 0; i < times; i++)
   {
     sendCommand(NORMAL_DISPLAY);
     delay(200);
@@ -155,17 +140,19 @@ void OLED85::blinkScreen(uint8_t n)
   }
 }
 
-// render a bitmap 
+// render a bitmap
 void OLED85::drawImage(const uint8_t img[], uint8_t blank_half = 0)
 {
   uint32_t counter = 0;
+  setPageAddr(0, NUM_PAGES - 1);
+  setColAddr(0, WIDTH - 1);
   for (uint8_t i = 0; i < NUM_PAGES; i++)
   {
-    setColAddr(0, WIDTH - 1);
-    setPageAddr(i, i);
+    //setColAddr(0, WIDTH - 1);
+    //setPageAddr(i, i);
     TinyWireM.beginTransmission(I2C_ADDR);
     TinyWireM.write(DATABYTE);
-    for (uint16_t j = 0; j < WIDTH ; j++)
+    for (uint8_t j = 0; j < WIDTH ; j++)
     {
       uint8_t h = pgm_read_byte(&img[counter++]);
       if (counter < 265 && blank_half) h = 0x00;
@@ -186,28 +173,28 @@ void OLED85::displayScore(uint8_t score)
 {
   uint8_t full[][2] = {{10, 1}, {11, 1}, {12, 1}, {10, 2}, {12, 2}, {10, 3}, {11, 3}, {12, 3}, {10, 4}, {12, 4}, {10, 5}, {11, 5}, {12, 5}};
   uint8_t numbers[][NUM_SEGMENTS] = {
-                          {1,1,1,1,1,1,0,1,1,1,1,1,1},  // 0
-                          {0,0,1,0,1,0,0,1,0,1,0,0,1},   // 1
-                          {1,1,1,0,1,1,1,1,1,0,1,1,1},   // 2
-                          {1,1,1,0,1,1,1,1,0,1,1,1,1},   // 3
-                          {1,0,1,1,1,1,1,1,0,1,0,0,1},   // 4
-                          {1,1,1,1,0,1,1,1,0,1,1,1,1},   // 5
-                          {1,1,1,1,0,1,1,1,1,1,1,1,1},   // 6
-                          {1,1,1,0,1,0,0,1,0,1,0,0,1},   // 7
-                          {1,1,1,1,1,1,1,1,1,1,1,1,1},   // 8
-                          {1,1,1,1,1,1,1,1,0,1,1,1,1}    // 9
-                          };
-  
+    {1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1}, // 0
+    {0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1}, // 1
+    {1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1}, // 2
+    {1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1}, // 3
+    {1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1}, // 4
+    {1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1}, // 5
+    {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1}, // 6
+    {1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1}, // 7
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 8
+    {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1} // 9
+  };
+
   for (uint8_t i = 0; i < NUM_SEGMENTS; i++)
   {
     if (numbers[(score / 10) % 10][i])
     {
-      drawBlock(16 - full[i][0] + 1, NUM_PAGES - full[i][1] - 2);
+      drawBlock(16 - full[i][0] + 1, NUM_PAGES - full[i][1] - 2, 0, 0, 0xff);
     }
     if (numbers[score % 10][i])
     {
-      drawBlock(16 - full[i][0] + 1 - 4, NUM_PAGES - full[i][1] - 2);
+      drawBlock(16 - full[i][0] + 1 - 4, NUM_PAGES - full[i][1] - 2, 0, 0, 0xff);
     }
-      
+
   }
 }
