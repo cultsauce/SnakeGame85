@@ -1,3 +1,6 @@
+#ifndef SNK85
+#define SNK85
+
 #define WIDTH                           128
 #define HEIGHT                          64
 #define NUM_PAGES                       8
@@ -29,6 +32,60 @@
 #define PRE_CHARGE_PERIOD               0xD9
 #define COM_PIN_HW_CONFIG               0xDA
 #define V_COMH_DESELECT                 0xDB
+
+
+const uint8_t init_commands_list[] PROGMEM = {
+    DISPLAY_OFF,         
+    CLOCK_DIV, 
+    0x80,                       
+    MULTIPLEX_RATIO,
+    HEIGHT - 1,
+    DISPLAY_OFFSET,   
+    0x00,                        
+    DISPLAY_START_LINE, 
+    0x00, 
+    CHARGEPUMP,
+    0x14,
+    MEMORY_ADDRESS_MODE, 
+    0x00,               
+    SEGMENT_REMAP, 
+    0xA1,
+    COM_SCAN_DECREASING,
+    COM_PIN_HW_CONFIG,
+    0x12,
+    SET_CONTRAST_CONTROL,
+    0xCF,
+    PRE_CHARGE_PERIOD,
+    0xF1,
+    V_COMH_DESELECT, 
+    0x40,
+    ENTIRE_DISPLAY_ON_RAM_CONTENT, 
+    NORMAL_DISPLAY,       
+    DEACTIVATE_SCROLL,
+    DISPLAY_ON
+    };
+
+class OLED85
+{
+  private:
+    void commandList(uint8_t len, const uint8_t init_commands_list []);
+    void setColAddr(uint8_t addr_start, uint8_t addr_stop);
+    void setPageAddr(uint8_t addr_start, uint8_t addr_stop);
+    void sendCommand(uint8_t command);
+    void sendData(uint8_t data);
+    
+  public:
+    OLED85();
+    
+    void fillScreen(uint8_t data);
+    void drawBlock(uint8_t x, uint8_t y, uint8_t offset_start, uint8_t offset_stop, uint8_t pattern);
+    void removeBlock(uint8_t x, uint8_t y);
+    void drawGrid();
+    void blinkScreen(uint8_t times);
+    void drawImage(const uint8_t img[], uint8_t blank_half = 0);
+    void displayScore(uint8_t score);
+};
+
 
 const unsigned char LOAD_SCREEN []  PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x80,
@@ -164,63 +221,5 @@ const unsigned char SCORE [] PROGMEM = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-
-const uint8_t init_commands_list[] PROGMEM = {
-    DISPLAY_OFF,         
-    CLOCK_DIV, 
-    0x80,                       
-    MULTIPLEX_RATIO,
-    HEIGHT - 1,
-    DISPLAY_OFFSET,   
-    0x00,                        
-    DISPLAY_START_LINE, 
-    0x00, 
-    CHARGEPUMP,
-    0x14,
-    MEMORY_ADDRESS_MODE, 
-    0x00,               
-    SEGMENT_REMAP, 
-    0xA1,
-    COM_SCAN_DECREASING,
-    COM_PIN_HW_CONFIG,
-    0x12,
-    SET_CONTRAST_CONTROL,
-    0xCF,
-    PRE_CHARGE_PERIOD,
-    0xF1,
-    V_COMH_DESELECT, 
-    0x40,
-    ENTIRE_DISPLAY_ON_RAM_CONTENT, 
-    NORMAL_DISPLAY,       
-    DEACTIVATE_SCROLL,
-    DISPLAY_ON
-    };
-
-#ifndef SNK85
-#define SNK85
-
-class OLED85
-{
-  private:
-    void commandList(uint8_t len, const uint8_t init_commands_list []);
-    void setColAddr(uint8_t addr_start, uint8_t addr_stop);
-    void setPageAddr(uint8_t addr_start, uint8_t addr_stop);
-    void sendCommand(uint8_t command);
-    void sendData(uint8_t data);
-    
-    
-    
-  public:
-    OLED85();
-    
-    void fillScreen(uint8_t data);
-    void drawPixel(uint8_t x, uint8_t y); // for drawing the snake
-    void drawBlock(uint8_t x, uint8_t y);  // for displaying final score
-    void drawGrid();
-    void removePixel(uint8_t x, uint8_t y);
-    void blinkScreen(uint8_t n);
-    void drawImage(const uint8_t img[], uint8_t blank_half = 0);
-    void displayScore(uint8_t score);
-};
 
 #endif //SNK85
